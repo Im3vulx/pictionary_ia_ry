@@ -16,11 +16,9 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateToLogin() async {
-    await Future.delayed(const Duration(seconds: 2)); // Ajout d'un délai de 2 secondes
+    await Future.delayed(const Duration(seconds: 2));
     Navigator.pushReplacement(
-      mounted
-          ? context
-          : throw Exception("Le contexte n'est plus monté"),
+      mounted ? context : throw Exception("Le contexte n'est plus monté"),
       MaterialPageRoute(builder: (context) => const LoginScreen()),
     );
   }
@@ -28,10 +26,10 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFF709CA7), // Couleur de fond
+      backgroundColor: Color(0xFF709CA7),
       body: Center(
-        child: CircularProgressIndicator( // Indicateur de chargement circulaire
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white), // Couleur de l'indicateur
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
         ),
       ),
     );
