@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/pictionary_ia_ry.iml" filepath="$PROJECT_DIR$/pictionary_ia_ry.iml" />
+      <module fileurl="file://$PROJECT_DIR$/android/pictionary_ia_ry_android.iml" filepath="$PROJECT_DIR$/android/pictionary_ia_ry_android.iml" />
+    </modules>
+  </component>
+</project>
