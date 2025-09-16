@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:pictionary_ia_ry/view/login_screen.dart';
+import 'package:pictionary_ia_ry/view/auth_screen.dart';
+import 'package:pictionary_ia_ry/view/widgets/futuristic_scaffold.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,15 +20,15 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(seconds: 2));
     Navigator.pushReplacement(
       mounted ? context : throw Exception("Le contexte n'est plus monté"),
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(builder: (context) => const AuthScreen()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF709CA7),
-      body: Center(
+    return FuturisticScaffold(
+      appBar: null,
+      body: const Center(
         child: CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
         ),

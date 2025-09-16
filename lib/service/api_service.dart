@@ -50,20 +50,29 @@ class ApiService {
   /// Se connecter
   static Future<bool> login(String name, String password) async {
     try {
+      print('🔐 Tentative de connexion pour: $name');
+      print('🔗 URL: $baseUrl/login');
+
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'name': name, 'password': password}),
       );
 
+      print('📡 Login Response Status: ${response.statusCode}');
+      print('📄 Login Response Body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         _jwt = data['jwt'] ?? data['token'] ?? data['access_token'];
+        print('✅ JWT récupéré: ${_jwt?.substring(0, 20)}...');
         return _jwt != null;
+      } else {
+        print('❌ Erreur login HTTP: ${response.statusCode} - ${response.body}');
+        return false;
       }
-      return false;
     } catch (e) {
-      print('Erreur login: $e');
+      print('❌ Erreur login: $e');
       return false;
     }
   }
@@ -101,21 +110,30 @@ class ApiService {
   /// Créer une session de jeu
   static Future<String?> createGameSession() async {
     try {
+      print('🔗 Tentative de création de session vers: $baseUrl/game_sessions');
+      print('🔑 Headers: $_headers');
+
       final response = await http.post(
         Uri.parse('$baseUrl/game_sessions'),
         headers: _headers,
       );
+
+      print('📡 Réponse HTTP Status: ${response.statusCode}');
+      print('📄 Réponse Body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         final dynamic rawId =
             data['id'] ?? data['_id'] ?? data['gameSessionId'];
         _gameSessionId = rawId?.toString();
+        print('✅ Session créée avec ID: $_gameSessionId');
         return _gameSessionId;
+      } else {
+        print('❌ Erreur HTTP: ${response.statusCode} - ${response.body}');
+        return null;
       }
-      return null;
     } catch (e) {
-      print('Erreur création session: $e');
+      print('❌ Erreur création session: $e');
       return null;
     }
   }
@@ -303,6 +321,64 @@ class ApiService {
     } catch (e) {
       print('Erreur réponse challenge: $e');
       return false;
+    }
+  }
+
+  /// Récupérer les détails d'une session
+  static Future<Map<String, dynamic>?> getSession(String sessionId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/game_sessions/$sessionId'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print('Erreur récupération session: $e');
+      return null;
+    }
+  }
+
+  /// Quitter une session
+  static Future<bool> leaveSession(String sessionId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/game_sessions/$sessionId/leave'),
+        headers: _headers,
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erreur quitter session: $e');
+      return false;
+    }
+  }
+
+  /// Lister les challenges d'une session (mode finished)
+  static Future<List<Map<String, dynamic>>?> listSessionChallenges(
+    String sessionId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/game_sessions/$sessionId/challenges'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        } else if (data['items'] != null) {
+          return List<Map<String, dynamic>>.from(data['items']);
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Erreur liste challenges: $e');
+      return null;
     }
   }
 
