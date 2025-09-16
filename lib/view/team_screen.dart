@@ -19,6 +19,7 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
   late Team redTeam;
   bool _hasStarted = false;
   bool _isCreatingSession = false;
+  bool _isJoiningSession = false;
   String? _gameSessionId;
   String? _selectedColor;
 
@@ -27,10 +28,6 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<double> _pulseAnimation;
   late Animation<Offset> _slideAnimation;
-
-  // Simulation de joueurs qui rejoignent
-  final List<String> _simulatedPlayers = ['Alice', 'Bob', 'Charlie'];
-  int _nextPlayerIndex = 0;
 
   @override
   void initState() {
@@ -74,12 +71,14 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _createSession() async {
+    if (!mounted) return;
     setState(() {
       _isCreatingSession = true;
     });
 
     try {
       final sessionId = await ApiService.createGameSession();
+      if (!mounted) return;
       if (sessionId != null) {
         setState(() {
           _gameSessionId = sessionId;
@@ -90,9 +89,11 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
         _showError('Erreur lors de la création de la session');
       }
     } catch (e) {
+      if (!mounted) return;
       _showError('Erreur de connexion au serveur');
       print('Erreur création session: $e');
     } finally {
+      if (!mounted) return;
       setState(() {
         _isCreatingSession = false;
       });
@@ -135,7 +136,9 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _selectTeam('blue'),
+                      onPressed: _isJoiningSession
+                          ? null
+                          : () => _selectTeam('blue'),
                       icon: const Icon(Icons.group, color: Colors.white),
                       label: const Text(
                         'Bleue',
@@ -150,7 +153,9 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _selectTeam('red'),
+                      onPressed: _isJoiningSession
+                          ? null
+                          : () => _selectTeam('red'),
                       icon: const Icon(Icons.group, color: Colors.white),
                       label: const Text(
                         'Rouge',
@@ -172,79 +177,51 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _selectTeam(String color) async {
+    if (!mounted) return;
     Navigator.pop(context);
 
+    if (!mounted) return;
     setState(() {
+      _isJoiningSession = true;
       _selectedColor = color;
     });
 
     try {
       if (_gameSessionId != null) {
-        // Generate a Player with ID
-        final player = Player(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          name: widget.nickname,
-        );
-
         final success = await ApiService.joinSession(_gameSessionId!, color);
+        if (!mounted) return;
         if (success) {
+          // Ajouter le joueur actuel à l'équipe sélectionnée SEULEMENT
           setState(() {
             if (color == 'blue') {
-              blueTeam.players.add(player);
+              // Vérifier si le joueur n'est pas déjà dans l'équipe
+              if (!blueTeam.players.any((p) => p.name == widget.nickname)) {
+                blueTeam.players.add(
+                  Player(name: widget.nickname, id: widget.nickname),
+                );
+              }
             } else {
-              redTeam.players.add(player);
+              // Vérifier si le joueur n'est pas déjà dans l'équipe
+              if (!redTeam.players.any((p) => p.name == widget.nickname)) {
+                redTeam.players.add(
+                  Player(name: widget.nickname, id: widget.nickname),
+                );
+              }
             }
           });
-          _simulatePlayersJoining();
         } else {
           _showError('Erreur lors de la jonction à l\'équipe');
         }
       }
     } catch (e) {
+      if (!mounted) return;
       _showError('Erreur de connexion');
       print('Erreur join session: $e');
     } finally {
+      if (!mounted) return;
       setState(() {
-        // completed
+        _isJoiningSession = false;
       });
-    }
-  }
-
-  void _simulatePlayersJoining() {
-    // Simulation de joueurs qui rejoignent progressivement
-    Timer.periodic(const Duration(seconds: 2), (timer) {
-      if (_nextPlayerIndex >= _simulatedPlayers.length || _hasStarted) {
-        timer.cancel();
-        return;
-      }
-
-      setState(() {
-        final playerName = _simulatedPlayers[_nextPlayerIndex];
-        final simulatedPlayer = Player(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          name: playerName,
-        );
-        if (blueTeam.players.length <= redTeam.players.length) {
-          blueTeam.players.add(simulatedPlayer);
-        } else {
-          redTeam.players.add(simulatedPlayer);
-        }
-        _nextPlayerIndex++;
-      });
-
-      _checkIfCanStart();
-    });
-  }
-
-  void _checkIfCanStart() {
-    final int blueCount = blueTeam.players.length;
-    final int redCount = redTeam.players.length;
-
-    final bool canStart = blueCount >= 2 && redCount >= 2;
-
-    if (canStart && !_hasStarted) {
-      _pulseController.stop();
-      Future.delayed(const Duration(seconds: 1), _startGame);
     }
   }
 
@@ -261,6 +238,7 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
         if (success) {
           _showSuccessMessage();
           Future.delayed(const Duration(seconds: 2), () {
+            if (!mounted) return;
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const GameScreen()),
@@ -271,12 +249,14 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       _showError('Erreur lors du démarrage');
       print('Erreur start session: $e');
     }
   }
 
   void _showSuccessMessage() {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -294,6 +274,7 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
   }
 
   void _showError(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -666,7 +647,6 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
-
           // Liste des joueurs
           Expanded(
             child: Padding(
@@ -693,10 +673,8 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
                         ],
                       ),
                     )
-                  : ListView.builder(
-                      itemCount: team.players.length,
-                      itemBuilder: (context, index) {
-                        final player = team.players[index];
+                  : ListView(
+                      children: team.players.map((player) {
                         final isCurrentUser = player.name == widget.nickname;
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
@@ -738,7 +716,7 @@ class _TeamScreenState extends State<TeamScreen> with TickerProviderStateMixin {
                             ],
                           ),
                         );
-                      },
+                      }).toList(),
                     ),
             ),
           ),
